@@ -1,30 +1,38 @@
+@Library("Shared") _
 pipeline {
     agent { label "bond" }
     stages {
+        stage("hello") {
+            steps {
+                script {
+                    hello()
+                }
+            }
+        }
         stage("code") {
             steps {
-                echo "this is cloning the code"
-                checkout scm
-                echo "cloning successful"
+                script {
+                    clone("https://github.com/r1gh1v/django-notes-app.git", "main")
+                }
             }
         }
         stage("build") {
             steps {
-                echo "this is building the code"
-                sh "docker build -t notes-app:latest ."
+                script {
+                    docker_build("notes-app", "latest", "r1gh1v")
+                }
             }
         }
         stage("push to docker hub") {
             steps {
-                withCredentials([usernamePassword(credentialsId: "dockerHubCred", usernameVariable: "dockerHubUser", passwordVariable: "dockerHubPass")]) {
-                    sh 'echo "$dockerHubPass" | docker login -u "$dockerHubUser" --password-stdin'
-                    sh "docker image tag notes-app:latest r1gh1v/notes-app:latest"
-                    sh "docker push r1gh1v/notes-app:latest"
+                script {
+                    docker_push("notes-app", "latest", "r1gh1v")
                 }
             }
         }
         stage("deploy") {
             steps {
+                echo "this is deploying the code"
                 sh "docker compose up -d"
             }
         }
